@@ -3,6 +3,7 @@
 **********************************    Linkedin: https://www.linkedin.com/in/ehabmagdyy/  *************************************
 **********************************    Youtube : https://www.youtube.com/@EhabMagdyy      *************************************
 ******************************************************************************************************************************/
+
 #if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
@@ -11,11 +12,11 @@
 #include <PubSubClient.h>
 
 /* Analog pin connected to the AO of Flame sensor */
-#define FLAME_AN_PIN       35                   /* Note: Do not select any ADC2 pin, beacuse it doesn't work when using WIFI */
+#define FLAME_AN_PIN       35               /* Note: Do not select any ADC2 pin, beacuse it doesn't work when using WIFI */
 
-const char* ssid = "2001";                        /* Your Wifi SSID */
-const char* password = "19821968";                /* Your Wifi Password */
-const char* mqtt_server = "test.mosquitto.org";   /* Mosquitto Server URL */
+#define ssid "2001"                         /* Your Wifi SSID */
+#define password "19821968"                 /* Your Wifi Password */
+#define mqtt_server "test.mosquitto.org"    /* Mosquitto Server URL */
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -49,10 +50,9 @@ void reconnect()
     {
         Serial.println("Attempting MQTT connection...");
 
-        if(client.connect("ESPClient")) 
+        if(client.connect("EhabESPClient")) 
         {
             Serial.println("Connected");
-            client.subscribe("Ehab/Flame");
         } 
         else 
         {
@@ -73,24 +73,22 @@ void setup()
 
 void loop()
 {
-    if(!client.connected()) { reconnect(); }
+    if (!client.connected()){ reconnect(); }
 
-    /* Read value of Flame Sensor and map it */
+    client.loop(); 
+
+    // Read value of Flame Sensor and map it
     analog_flame_value = analogRead(FLAME_AN_PIN);
     flame_percentage = map(analog_flame_value, 0, 4095, 100, 0);
 
-    char f[4] = {0};
+    String payload = String(flame_percentage);
 
-    f[0] = flame_percentage / 100 + '0';
-    f[1] += (flame_percentage / 10) % 10 + '0';
-    f[2] += flame_percentage % 10 + '0';
-
-    /* Sending Data to Node-Red */
-    client.publish("Ehab/Flame", f, false);
+    // Send data to Node-RED
+    client.publish("Ehab/Flame", payload.c_str());
 
     Serial.print("Flame: ");
     Serial.print(flame_percentage);
     Serial.println("%");
 
-    delay(250);
+    delay(1000);
 }
